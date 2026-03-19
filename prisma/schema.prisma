@@ -1,0 +1,143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  recipes        Recipe[]
+  pantryItems    PantryItem[]
+  shoppingItems  ShoppingListItem[]
+  mealPlans      MealPlan[]
+  cookingHistory CookingHistory[]
+}
+
+model Recipe {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  instructions String?
+  imageUrl     String?
+  sourceUrl    String?
+  prepTime     Int?     // minutes
+  cookTime     Int?     // minutes
+  servings     Int?
+  isFavorite   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  ingredients    RecipeIngredient[]
+  cookingHistory CookingHistory[]
+  mealPlans      MealPlan[]
+
+  @@index([userId])
+}
+
+model Ingredient {
+  id   String @id @default(cuid())
+  name String @unique
+
+  recipeIngredients RecipeIngredient[]
+  pantryItems       PantryItem[]
+  synonyms          IngredientSynonym[]
+}
+
+model RecipeIngredient {
+  id       String  @id @default(cuid())
+  quantity Float?
+  unit     String?
+  notes    String?
+
+  recipeId     String
+  recipe       Recipe     @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([recipeId, ingredientId])
+  @@index([recipeId])
+  @@index([ingredientId])
+}
+
+model PantryItem {
+  id             String    @id @default(cuid())
+  quantity       Float?
+  unit           String?
+  expirationDate DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  userId       String?
+  user         User?      @relation(fields: [userId], references: [id])
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@index([userId])
+  @@index([ingredientId])
+  @@index([expirationDate])
+}
+
+model IngredientSynonym {
+  id      String @id @default(cuid())
+  synonym String
+
+  ingredientId String
+  ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
+
+  @@unique([synonym])
+  @@index([ingredientId])
+}
+
+model ShoppingListItem {
+  id          String  @id @default(cuid())
+  name        String
+  quantity    Float?
+  unit        String?
+  isPurchased Boolean @default(false)
+  createdAt   DateTime @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model MealPlan {
+  id      String   @id @default(cuid())
+  date    DateTime
+  mealType String  // breakfast, lunch, dinner, snack
+
+  userId   String?
+  user     User?   @relation(fields: [userId], references: [id])
+  recipeId String
+  recipe   Recipe  @relation(fields: [recipeId], references: [id])
+
+  @@index([userId])
+  @@index([date])
+}
+
+model CookingHistory {
+  id       String   @id @default(cuid())
+  cookedAt DateTime @default(now())
+  notes    String?
+
+  userId   String?
+  user     User?   @relation(fields: [userId], references: [id])
+  recipeId String
+  recipe   Recipe  @relation(fields: [recipeId], references: [id])
+
+  @@index([userId])
+  @@index([recipeId])
+  @@index([cookedAt])
+}

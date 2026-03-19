@@ -1,0 +1,38 @@
+@import "tailwindcss";
+
+@source "../../node_modules/@radix-ui/react-*";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(142 10% 10%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(142 10% 10%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(142 10% 10%);
+  --color-primary: hsl(142 72% 42%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(142 20% 95%);
+  --color-secondary-foreground: hsl(142 10% 20%);
+  --color-muted: hsl(142 10% 96%);
+  --color-muted-foreground: hsl(142 5% 45%);
+  --color-accent: hsl(142 20% 93%);
+  --color-accent-foreground: hsl(142 10% 15%);
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-border: hsl(142 10% 90%);
+  --color-input: hsl(142 10% 85%);
+  --color-ring: hsl(142 72% 42%);
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+}
