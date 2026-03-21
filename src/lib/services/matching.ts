@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import type { RecipeMatch, RecipeWithIngredients, PantryItemWithIngredient } from "@/types";
 
@@ -33,48 +34,74 @@ function normalize(name: string): string {
   return name.toLowerCase().trim().replace(/s$/, ""); // basic plural removal
 }
 
-// Check if a pantry item matches a recipe ingredient using fuzzy + synonyms
+// Pre-compute normalized pantry names into a Set for fast exact/contains lookups,
+// and keep the array only for fuzzy fallback
+function buildPantryIndex(pantryItems: PantryItemWithIngredient[]) {
+  const normalizedNames = pantryItems.map((p) => normalize(p.ingredient.name));
+  const nameSet = new Set(normalizedNames);
+  return { normalizedNames, nameSet };
+}
+
+// Check if a pantry item matches a recipe ingredient using exact > contains > fuzzy > synonyms
 function isMatch(
-  pantryName: string,
   ingredientName: string,
+  pantryIndex: ReturnType<typeof buildPantryIndex>,
   synonymMap: Map<string, string[]>
 ): boolean {
-  const pNorm = normalize(pantryName);
   const iNorm = normalize(ingredientName);
+  const { normalizedNames, nameSet } = pantryIndex;
 
-  // Exact match
-  if (pNorm === iNorm) return true;
+  // Exact match (O(1) Set lookup)
+  if (nameSet.has(iNorm)) return true;
 
-  // Contains match
-  if (pNorm.includes(iNorm) || iNorm.includes(pNorm)) return true;
+  // Contains match + fuzzy only against pantry items (skip Levenshtein when possible)
+  for (const pNorm of normalizedNames) {
+    if (pNorm.includes(iNorm) || iNorm.includes(pNorm)) return true;
+  }
 
-  // Fuzzy match (threshold 0.8)
-  if (similarity(pNorm, iNorm) >= 0.8) return true;
+  // Fuzzy match - only if short names where contains wouldn't catch typos
+  if (iNorm.length <= 8) {
+    for (const pNorm of normalizedNames) {
+      if (Math.abs(pNorm.length - iNorm.length) <= 2 && similarity(pNorm, iNorm) >= 0.8) return true;
+    }
+  }
 
-  // Synonym match
+  // Synonym match (exact only — synonyms should be pre-defined correctly)
   const synonyms = synonymMap.get(iNorm) || [];
   for (const syn of synonyms) {
     const synNorm = normalize(syn);
-    if (pNorm === synNorm || similarity(pNorm, synNorm) >= 0.8) return true;
+    if (nameSet.has(synNorm)) return true;
+    // Contains fallback for synonyms
+    for (const pNorm of normalizedNames) {
+      if (pNorm.includes(synNorm) || synNorm.includes(pNorm)) return true;
+    }
   }
 
   return false;
 }
 
-export async function getRecipeMatches(): Promise<RecipeMatch[]> {
-  const [recipes, pantryItems, synonyms, histories] = await Promise.all([
+// Single DB fetch, returns all data needed for suggestions
+async function fetchMatchData() {
+  const [recipes, pantryItems, synonyms] = await Promise.all([
     db.recipe.findMany({
       include: {
         ingredients: { include: { ingredient: true } },
-        cookingHistory: { orderBy: { cookedAt: "desc" }, take: 1 },
+        cookingHistory: { orderBy: { cookedAt: "desc" as const }, take: 1 },
       },
     }),
     db.pantryItem.findMany({ include: { ingredient: true } }),
     db.ingredientSynonym.findMany({ include: { ingredient: true } }),
-    db.cookingHistory.findMany({ orderBy: { cookedAt: "desc" } }),
   ]);
 
-  // Build synonym map: ingredient name -> synonyms[]
+  return { recipes, pantryItems, synonyms };
+}
+
+function computeMatches(
+  recipes: Awaited<ReturnType<typeof fetchMatchData>>["recipes"],
+  pantryItems: PantryItemWithIngredient[],
+  synonyms: Awaited<ReturnType<typeof fetchMatchData>>["synonyms"]
+): RecipeMatch[] {
+  // Build synonym map
   const synonymMap = new Map<string, string[]>();
   for (const syn of synonyms) {
     const name = normalize(syn.ingredient.name);
@@ -83,15 +110,8 @@ export async function getRecipeMatches(): Promise<RecipeMatch[]> {
     synonymMap.set(name, existing);
   }
 
-  // Build history map: recipeId -> last cooked date
-  const historyMap = new Map<string, Date>();
-  for (const h of histories) {
-    if (!historyMap.has(h.recipeId)) {
-      historyMap.set(h.recipeId, h.cookedAt);
-    }
-  }
-
-  const pantryNames = pantryItems.map((p) => p.ingredient.name);
+  // Build pantry index once
+  const pantryIndex = buildPantryIndex(pantryItems);
 
   return recipes.map((recipe) => {
     const total = recipe.ingredients.length;
@@ -100,8 +120,7 @@ export async function getRecipeMatches(): Promise<RecipeMatch[]> {
 
     for (const ri of recipe.ingredients) {
       const ingredientName = ri.ingredient.name;
-      const found = pantryNames.some((pn) => isMatch(pn, ingredientName, synonymMap));
-      if (found) {
+      if (isMatch(ingredientName, pantryIndex, synonymMap)) {
         matched.push(ingredientName);
       } else {
         missing.push(ingredientName);
@@ -109,9 +128,9 @@ export async function getRecipeMatches(): Promise<RecipeMatch[]> {
     }
 
     const matchScore = total > 0 ? Math.round((matched.length / total) * 100) : 0;
-    const lastCooked = historyMap.get(recipe.id) || null;
+    const lastCooked = recipe.cookingHistory[0]?.cookedAt ?? null;
     const daysSinceCooked = lastCooked
-      ? Math.floor((Date.now() - lastCooked.getTime()) / (1000 * 60 * 60 * 24))
+      ? Math.floor((Date.now() - new Date(lastCooked).getTime()) / (1000 * 60 * 60 * 24))
       : null;
 
     return {
@@ -125,44 +144,72 @@ export async function getRecipeMatches(): Promise<RecipeMatch[]> {
   });
 }
 
-export async function getCookNowSuggestions() {
+// Cached recipe matches — single DB call, cached for 30s
+const getCachedMatches = unstable_cache(
+  async () => {
+    const { recipes, pantryItems, synonyms } = await fetchMatchData();
+    return computeMatches(recipes, pantryItems, synonyms);
+  },
+  ["recipe-matches"],
+  { revalidate: 30 }
+);
+
+export async function getRecipeMatches(): Promise<RecipeMatch[]> {
+  return getCachedMatches();
+}
+
+// All suggestions computed from a single getRecipeMatches() call
+export async function getAllSuggestions() {
   const matches = await getRecipeMatches();
-  return matches
+
+  const cookNow = matches
     .filter((m) => m.matchScore >= 50)
     .sort((a, b) => b.matchScore - a.matchScore)
     .slice(0, 10);
-}
 
-export async function getRediscoverSuggestions() {
-  const matches = await getRecipeMatches();
-  return matches
+  const rediscover = matches
     .filter((m) => m.daysSinceCooked !== null && m.daysSinceCooked > 14)
     .sort((a, b) => (b.daysSinceCooked || 0) - (a.daysSinceCooked || 0))
     .slice(0, 10);
-}
 
-export async function getExpiringIngredientSuggestions() {
+  // Expiring ingredients
   const threeDaysFromNow = new Date();
   threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3);
+  const now = new Date();
 
   const expiringItems = await db.pantryItem.findMany({
     where: {
-      expirationDate: { lte: threeDaysFromNow, gte: new Date() },
+      expirationDate: { lte: threeDaysFromNow, gte: now },
     },
     include: { ingredient: true },
   });
 
-  if (expiringItems.length === 0) return [];
+  const expiringNameSet = new Set(expiringItems.map((i) => normalize(i.ingredient.name)));
 
-  const expiringNames = expiringItems.map((i) => i.ingredient.name);
-  const matches = await getRecipeMatches();
+  const expiring = expiringItems.length === 0
+    ? []
+    : matches
+        .filter((m) =>
+          m.matchedIngredients.some((ing) => expiringNameSet.has(normalize(ing)))
+        )
+        .sort((a, b) => b.matchScore - a.matchScore)
+        .slice(0, 10);
 
-  return matches
-    .filter((m) =>
-      m.matchedIngredients.some((ing) =>
-        expiringNames.some((en) => isMatch(en, ing, new Map()))
-      )
-    )
-    .sort((a, b) => b.matchScore - a.matchScore)
-    .slice(0, 10);
+  return { cookNow, rediscover, expiring };
+}
+
+// Keep individual exports for pages that only need one type
+export async function getCookNowSuggestions() {
+  const { cookNow } = await getAllSuggestions();
+  return cookNow;
+}
+
+export async function getRediscoverSuggestions() {
+  const { rediscover } = await getAllSuggestions();
+  return rediscover;
+}
+
+export async function getExpiringIngredientSuggestions() {
+  const { expiring } = await getAllSuggestions();
+  return expiring;
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,10 +22,20 @@ export function MealPlannerView({
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
+  // Pre-index meals by "date|mealType" key to avoid filtering the full array 28 times
+  const mealIndex = useMemo(() => {
+    const index = new Map<string, MealPlanWithRecipe[]>();
+    for (const mp of mealPlans) {
+      const key = `${format(new Date(mp.date), "yyyy-MM-dd")}|${mp.mealType}`;
+      const arr = index.get(key) || [];
+      arr.push(mp);
+      index.set(key, arr);
+    }
+    return index;
+  }, [mealPlans]);
+
   const getMealsForDay = (date: Date, mealType: string) =>
-    mealPlans.filter(
-      (mp) => isSameDay(new Date(mp.date), date) && mp.mealType === mealType
-    );
+    mealIndex.get(`${format(date, "yyyy-MM-dd")}|${mealType}`) || [];
 
   const handleAdd = async (date: Date, mealType: string, recipeId: string) => {
     await addMealPlan({
