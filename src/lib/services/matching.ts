@@ -80,15 +80,16 @@ function isMatch(
 }
 
 // Single DB fetch, returns all data needed for suggestions
-async function fetchMatchData() {
+async function fetchMatchData(userId: string) {
   const [recipes, pantryItems, synonyms] = await Promise.all([
     db.recipe.findMany({
+      where: { userId },
       include: {
         ingredients: { include: { ingredient: true } },
         cookingHistory: { orderBy: { cookedAt: "desc" as const }, take: 1 },
       },
     }),
-    db.pantryItem.findMany({ include: { ingredient: true } }),
+    db.pantryItem.findMany({ where: { userId }, include: { ingredient: true } }),
     db.ingredientSynonym.findMany({ include: { ingredient: true } }),
   ]);
 
@@ -143,24 +144,25 @@ function computeMatches(
   });
 }
 
-// Simple in-memory cache with TTL
-let matchCache: { data: RecipeMatch[]; timestamp: number } | null = null;
+// Per-user in-memory cache with TTL
+const matchCacheMap = new Map<string, { data: RecipeMatch[]; timestamp: number }>();
 const CACHE_TTL = 30_000; // 30 seconds
 
-export async function getRecipeMatches(): Promise<RecipeMatch[]> {
+export async function getRecipeMatches(userId: string): Promise<RecipeMatch[]> {
   const now = Date.now();
-  if (matchCache && now - matchCache.timestamp < CACHE_TTL) {
-    return matchCache.data;
+  const cached = matchCacheMap.get(userId);
+  if (cached && now - cached.timestamp < CACHE_TTL) {
+    return cached.data;
   }
-  const { recipes, pantryItems, synonyms } = await fetchMatchData();
+  const { recipes, pantryItems, synonyms } = await fetchMatchData(userId);
   const data = computeMatches(recipes, pantryItems, synonyms);
-  matchCache = { data, timestamp: now };
+  matchCacheMap.set(userId, { data, timestamp: now });
   return data;
 }
 
 // All suggestions computed from a single getRecipeMatches() call
-export async function getAllSuggestions() {
-  const matches = await getRecipeMatches();
+export async function getAllSuggestions(userId: string) {
+  const matches = await getRecipeMatches(userId);
 
   const cookNow = matches
     .filter((m) => m.matchScore >= 50)
@@ -179,6 +181,7 @@ export async function getAllSuggestions() {
 
   const expiringItems = await db.pantryItem.findMany({
     where: {
+      userId,
       expirationDate: { lte: threeDaysFromNow, gte: now },
     },
     include: { ingredient: true },
@@ -196,20 +199,4 @@ export async function getAllSuggestions() {
         .slice(0, 10);
 
   return { cookNow, rediscover, expiring };
-}
-
-// Keep individual exports for pages that only need one type
-export async function getCookNowSuggestions() {
-  const { cookNow } = await getAllSuggestions();
-  return cookNow;
-}
-
-export async function getRediscoverSuggestions() {
-  const { rediscover } = await getAllSuggestions();
-  return rediscover;
-}
-
-export async function getExpiringIngredientSuggestions() {
-  const { expiring } = await getAllSuggestions();
-  return expiring;
 }

@@ -8,11 +8,12 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   recipes        Recipe[]
   pantryItems    PantryItem[]
@@ -35,8 +36,8 @@ model Recipe {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   ingredients    RecipeIngredient[]
   cookingHistory CookingHistory[]
@@ -78,8 +79,8 @@ model PantryItem {
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
-  userId       String?
-  user         User?      @relation(fields: [userId], references: [id])
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   ingredientId String
   ingredient   Ingredient @relation(fields: [ingredientId], references: [id])
 
@@ -107,21 +108,21 @@ model ShoppingListItem {
   isPurchased Boolean @default(false)
   createdAt   DateTime @default(now())
 
-  userId String?
-  user   User?   @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model MealPlan {
-  id      String   @id @default(cuid())
-  date    DateTime
-  mealType String  // breakfast, lunch, dinner, snack
+  id       String   @id @default(cuid())
+  date     DateTime
+  mealType String   // breakfast, lunch, dinner, snack
 
-  userId   String?
-  user     User?   @relation(fields: [userId], references: [id])
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipeId String
-  recipe   Recipe  @relation(fields: [recipeId], references: [id])
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
 
   @@index([userId])
   @@index([date])
@@ -132,10 +133,10 @@ model CookingHistory {
   cookedAt DateTime @default(now())
   notes    String?
 
-  userId   String?
-  user     User?   @relation(fields: [userId], references: [id])
+  userId   String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   recipeId String
-  recipe   Recipe  @relation(fields: [recipeId], references: [id])
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
 
   @@index([userId])
   @@index([recipeId])

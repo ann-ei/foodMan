@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Home, BookOpen, Carrot, ShoppingCart, CalendarDays } from "lucide-react";
+import { Home, BookOpen, Carrot, ShoppingCart, CalendarDays, LogOut } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -13,7 +14,7 @@ const navItems = [
   { href: "/meal-planner", label: "Planner", icon: CalendarDays },
 ];
 
-export function Navbar() {
+export function Navbar({ userName }: { userName?: string | null }) {
   const pathname = usePathname();
 
   return (
@@ -47,6 +48,17 @@ export function Navbar() {
             );
           })}
         </nav>
+        <div className="p-3 border-t">
+          <div className="flex items-center justify-between px-3 py-2">
+            <span className="text-sm font-medium truncate">{userName || "User"}</span>
+            <button
+              onClick={() => signOut({ callbackUrl: "/login" })}
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </aside>
 
       {/* Mobile bottom nav */}

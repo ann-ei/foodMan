@@ -1,9 +1,24 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
+
+  // Create seed user
+  const passwordHash = await bcrypt.hash("password123", 12);
+  const user = await prisma.user.upsert({
+    where: { email: "demo@myfood.app" },
+    update: {},
+    create: {
+      email: "demo@myfood.app",
+      name: "Demo User",
+      passwordHash,
+    },
+  });
+
+  console.log(`Seed user: demo@myfood.app / password123`);
 
   // Create ingredients
   const ingredients = await Promise.all(
@@ -225,6 +240,7 @@ async function main() {
   for (const r of recipes) {
     const recipe = await prisma.recipe.create({
       data: {
+        userId: user.id,
         title: r.title,
         description: r.description,
         instructions: r.instructions,
@@ -246,6 +262,7 @@ async function main() {
       const daysAgo = [3, 21, 45, 7, 30][recipes.indexOf(r)];
       await prisma.cookingHistory.create({
         data: {
+          userId: user.id,
           recipeId: recipe.id,
           cookedAt: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
         },
@@ -276,6 +293,7 @@ async function main() {
     const ingredient = ing(item.name);
     await prisma.pantryItem.create({
       data: {
+        userId: user.id,
         ingredientId: ingredient.id,
         quantity: item.qty,
         unit: item.unit,

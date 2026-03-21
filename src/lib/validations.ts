@@ -38,6 +38,19 @@ export const mealPlanInput = z.object({
   recipeId: z.string().min(1),
 });
 
+export const signupInput = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export const loginInput = z.object({
+  email: z.string().email("Invalid email"),
+  password: z.string().min(1, "Password is required"),
+});
+
+export type SignupInput = z.infer<typeof signupInput>;
+export type LoginInput = z.infer<typeof loginInput>;
 export type RecipeInput = z.infer<typeof recipeInput>;
 export type PantryItemInput = z.infer<typeof pantryItemInput>;
 export type ShoppingItemInput = z.infer<typeof shoppingItemInput>;

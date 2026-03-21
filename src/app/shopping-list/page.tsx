@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { getRequiredUser } from "@/lib/auth-utils";
 import { ShoppingItemRow } from "@/components/shopping-list/shopping-item-row";
 import { AddShoppingItem } from "@/components/shopping-list/add-shopping-item";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,10 @@ import { Trash2 } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function ShoppingListPage() {
+  const user = await getRequiredUser();
+
   const items = await db.shoppingListItem.findMany({
+    where: { userId: user.id },
     orderBy: [{ isPurchased: "asc" }, { createdAt: "desc" }],
   });
 

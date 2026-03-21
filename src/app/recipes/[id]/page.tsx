@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { getRequiredUser } from "@/lib/auth-utils";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,10 +12,11 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function RecipeDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getRequiredUser();
   const { id } = await params;
 
-  const recipe = await db.recipe.findUnique({
-    where: { id },
+  const recipe = await db.recipe.findFirst({
+    where: { id, userId: user.id },
     include: {
       ingredients: { include: { ingredient: true } },
       cookingHistory: { orderBy: { cookedAt: "desc" }, take: 10 },

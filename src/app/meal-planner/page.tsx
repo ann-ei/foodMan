@@ -1,12 +1,16 @@
 import { db } from "@/lib/db";
+import { getRequiredUser } from "@/lib/auth-utils";
 import { MealPlannerView } from "@/components/meal-planner/meal-planner-view";
 import type { MealPlanWithRecipe, RecipeWithIngredients } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function MealPlannerPage() {
+  const user = await getRequiredUser();
+
   const [mealPlans, recipes] = await Promise.all([
     db.mealPlan.findMany({
+      where: { userId: user.id },
       include: {
         recipe: {
           include: { ingredients: { include: { ingredient: true } } },
@@ -15,6 +19,7 @@ export default async function MealPlannerPage() {
       orderBy: { date: "asc" },
     }),
     db.recipe.findMany({
+      where: { userId: user.id },
       include: { ingredients: { include: { ingredient: true } } },
       orderBy: { title: "asc" },
     }),

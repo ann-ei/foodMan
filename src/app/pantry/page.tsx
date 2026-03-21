@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { getRequiredUser } from "@/lib/auth-utils";
 import { PantryForm } from "@/components/pantry/pantry-form";
 import { PantryItemRow } from "@/components/pantry/pantry-item-row";
 import type { PantryItemWithIngredient } from "@/types";
@@ -6,7 +7,10 @@ import type { PantryItemWithIngredient } from "@/types";
 export const dynamic = "force-dynamic";
 
 export default async function PantryPage() {
+  const user = await getRequiredUser();
+
   const items = await db.pantryItem.findMany({
+    where: { userId: user.id },
     include: { ingredient: true },
     orderBy: [
       { expirationDate: "asc" },

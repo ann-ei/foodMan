@@ -1,5 +1,5 @@
-import { db } from "@/lib/db";
 import { getRecipeMatches } from "@/lib/services/matching";
+import { getRequiredUser } from "@/lib/auth-utils";
 import { RecipeCard } from "@/components/recipes/recipe-card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
@@ -8,7 +8,8 @@ import Link from "next/link";
 export const dynamic = "force-dynamic";
 
 export default async function RecipesPage() {
-  const matches = await getRecipeMatches();
+  const user = await getRequiredUser();
+  const matches = await getRecipeMatches(user.id);
 
   // Sort by match score descending by default
   const sorted = [...matches].sort((a, b) => b.matchScore - a.matchScore);

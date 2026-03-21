@@ -1,13 +1,15 @@
 import { db } from "@/lib/db";
+import { getRequiredUser } from "@/lib/auth-utils";
 import { notFound } from "next/navigation";
 import { RecipeForm } from "@/components/recipes/recipe-form";
 import type { RecipeWithIngredients } from "@/types";
 
 export default async function EditRecipePage({ params }: { params: Promise<{ id: string }> }) {
+  const user = await getRequiredUser();
   const { id } = await params;
 
-  const recipe = await db.recipe.findUnique({
-    where: { id },
+  const recipe = await db.recipe.findFirst({
+    where: { id, userId: user.id },
     include: {
       ingredients: { include: { ingredient: true } },
     },

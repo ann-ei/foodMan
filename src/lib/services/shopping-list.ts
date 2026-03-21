@@ -1,8 +1,8 @@
 import { db } from "@/lib/db";
 
-export async function addMissingToShoppingList(missingIngredients: string[]) {
+export async function addMissingToShoppingList(userId: string, missingIngredients: string[]) {
   const existing = await db.shoppingListItem.findMany({
-    where: { isPurchased: false },
+    where: { isPurchased: false, userId },
   });
 
   const existingNames = new Set(existing.map((i) => i.name.toLowerCase()));
@@ -13,16 +13,17 @@ export async function addMissingToShoppingList(missingIngredients: string[]) {
   if (toAdd.length === 0) return [];
 
   return db.shoppingListItem.createMany({
-    data: toAdd.map((name) => ({ name })),
+    data: toAdd.map((name) => ({ name, userId })),
   });
 }
 
 export async function generateShoppingListFromMealPlan(
+  userId: string,
   startDate: Date,
   endDate: Date
 ) {
   const mealPlans = await db.mealPlan.findMany({
-    where: { date: { gte: startDate, lte: endDate } },
+    where: { date: { gte: startDate, lte: endDate }, userId },
     include: {
       recipe: {
         include: { ingredients: { include: { ingredient: true } } },
@@ -49,6 +50,7 @@ export async function generateShoppingListFromMealPlan(
 
   // Subtract pantry items
   const pantry = await db.pantryItem.findMany({
+    where: { userId },
     include: { ingredient: true },
   });
 
@@ -62,12 +64,13 @@ export async function generateShoppingListFromMealPlan(
   }
 
   // Clear existing unpurchased items and create new ones
-  await db.shoppingListItem.deleteMany({ where: { isPurchased: false } });
+  await db.shoppingListItem.deleteMany({ where: { isPurchased: false, userId } });
 
   const items = Array.from(needed.entries()).map(([name, { quantity, unit }]) => ({
     name,
     quantity,
     unit: unit || undefined,
+    userId,
   }));
 
   if (items.length > 0) {

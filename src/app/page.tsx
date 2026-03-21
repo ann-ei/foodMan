@@ -1,11 +1,13 @@
 import { Suspense } from "react";
 import { SuggestionSection } from "@/components/home/suggestion-section";
 import { getAllSuggestions } from "@/lib/services/matching";
+import { getRequiredUser } from "@/lib/auth-utils";
 
 export const dynamic = "force-dynamic";
 
 async function Suggestions() {
-  const { cookNow, rediscover, expiring } = await getAllSuggestions();
+  const user = await getRequiredUser();
+  const { cookNow, rediscover, expiring } = await getAllSuggestions(user.id);
   const hasAnySuggestions = cookNow.length > 0 || rediscover.length > 0 || expiring.length > 0;
 
   return (

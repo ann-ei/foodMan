@@ -1,15 +1,18 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { getRequiredUser } from "@/lib/auth-utils";
 import { shoppingItemInput, type ShoppingItemInput } from "@/lib/validations";
 import { addMissingToShoppingList } from "@/lib/services/shopping-list";
 import { revalidatePath } from "next/cache";
 
 export async function addShoppingItem(data: ShoppingItemInput) {
+  const user = await getRequiredUser();
   const parsed = shoppingItemInput.parse(data);
 
   const item = await db.shoppingListItem.create({
     data: {
+      userId: user.id,
       name: parsed.name,
       quantity: parsed.quantity ?? null,
       unit: parsed.unit || null,
@@ -21,7 +24,8 @@ export async function addShoppingItem(data: ShoppingItemInput) {
 }
 
 export async function togglePurchased(id: string) {
-  const item = await db.shoppingListItem.findUnique({ where: { id } });
+  const user = await getRequiredUser();
+  const item = await db.shoppingListItem.findFirst({ where: { id, userId: user.id } });
   if (!item) throw new Error("Item not found");
 
   await db.shoppingListItem.update({
@@ -33,16 +37,19 @@ export async function togglePurchased(id: string) {
 }
 
 export async function deleteShoppingItem(id: string) {
-  await db.shoppingListItem.delete({ where: { id } });
+  const user = await getRequiredUser();
+  await db.shoppingListItem.deleteMany({ where: { id, userId: user.id } });
   revalidatePath("/shopping-list");
 }
 
 export async function clearPurchased() {
-  await db.shoppingListItem.deleteMany({ where: { isPurchased: true } });
+  const user = await getRequiredUser();
+  await db.shoppingListItem.deleteMany({ where: { isPurchased: true, userId: user.id } });
   revalidatePath("/shopping-list");
 }
 
 export async function addMissingIngredientsToList(ingredients: string[]) {
-  await addMissingToShoppingList(ingredients);
+  const user = await getRequiredUser();
+  await addMissingToShoppingList(user.id, ingredients);
   revalidatePath("/shopping-list");
 }

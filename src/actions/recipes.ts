@@ -1,14 +1,17 @@
 "use server";
 
 import { db } from "@/lib/db";
+import { getRequiredUser } from "@/lib/auth-utils";
 import { recipeInput, type RecipeInput } from "@/lib/validations";
 import { revalidatePath } from "next/cache";
 
 export async function createRecipe(data: RecipeInput) {
+  const user = await getRequiredUser();
   const parsed = recipeInput.parse(data);
 
   const recipe = await db.recipe.create({
     data: {
+      userId: user.id,
       title: parsed.title,
       description: parsed.description || null,
       instructions: parsed.instructions || null,
@@ -43,9 +46,12 @@ export async function createRecipe(data: RecipeInput) {
 }
 
 export async function updateRecipe(id: string, data: RecipeInput) {
+  const user = await getRequiredUser();
   const parsed = recipeInput.parse(data);
 
-  // Delete existing recipe ingredients
+  const existing = await db.recipe.findFirst({ where: { id, userId: user.id } });
+  if (!existing) throw new Error("Recipe not found");
+
   await db.recipeIngredient.deleteMany({ where: { recipeId: id } });
 
   const recipe = await db.recipe.update({
@@ -86,13 +92,16 @@ export async function updateRecipe(id: string, data: RecipeInput) {
 }
 
 export async function deleteRecipe(id: string) {
-  await db.recipe.delete({ where: { id } });
+  const user = await getRequiredUser();
+  const count = await db.recipe.deleteMany({ where: { id, userId: user.id } });
+  if (count.count === 0) throw new Error("Recipe not found");
   revalidatePath("/recipes");
   revalidatePath("/");
 }
 
 export async function toggleFavorite(id: string) {
-  const recipe = await db.recipe.findUnique({ where: { id } });
+  const user = await getRequiredUser();
+  const recipe = await db.recipe.findFirst({ where: { id, userId: user.id } });
   if (!recipe) throw new Error("Recipe not found");
 
   await db.recipe.update({
@@ -105,8 +114,12 @@ export async function toggleFavorite(id: string) {
 }
 
 export async function markAsCooked(recipeId: string) {
+  const user = await getRequiredUser();
+  const recipe = await db.recipe.findFirst({ where: { id: recipeId, userId: user.id } });
+  if (!recipe) throw new Error("Recipe not found");
+
   await db.cookingHistory.create({
-    data: { recipeId },
+    data: { recipeId, userId: user.id },
   });
   revalidatePath("/recipes");
   revalidatePath("/");
