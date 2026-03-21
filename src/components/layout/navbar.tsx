@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
-import { Home, BookOpen, Carrot, ShoppingCart, CalendarDays, LogOut } from "lucide-react";
+import { Home, BookOpen, Carrot, ShoppingCart, CalendarDays, LogOut, User } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -48,16 +48,26 @@ export function Navbar({ userName }: { userName?: string | null }) {
             );
           })}
         </nav>
-        <div className="p-3 border-t">
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-sm font-medium truncate">{userName || "User"}</span>
-            <button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-            </button>
-          </div>
+        <div className="p-3 border-t space-y-1">
+          <Link
+            href="/profile"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+              pathname === "/profile"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+            )}
+          >
+            <User className="h-5 w-5" />
+            {userName || "User"}
+          </Link>
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground w-full"
+          >
+            <LogOut className="h-5 w-5" />
+            Sign out
+          </button>
         </div>
       </aside>
 
