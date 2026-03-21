@@ -1,4 +1,3 @@
-import { unstable_cache } from "next/cache";
 import { db } from "@/lib/db";
 import type { RecipeMatch, RecipeWithIngredients, PantryItemWithIngredient } from "@/types";
 
@@ -144,18 +143,19 @@ function computeMatches(
   });
 }
 
-// Cached recipe matches — single DB call, cached for 30s
-const getCachedMatches = unstable_cache(
-  async () => {
-    const { recipes, pantryItems, synonyms } = await fetchMatchData();
-    return computeMatches(recipes, pantryItems, synonyms);
-  },
-  ["recipe-matches"],
-  { revalidate: 30 }
-);
+// Simple in-memory cache with TTL
+let matchCache: { data: RecipeMatch[]; timestamp: number } | null = null;
+const CACHE_TTL = 30_000; // 30 seconds
 
 export async function getRecipeMatches(): Promise<RecipeMatch[]> {
-  return getCachedMatches();
+  const now = Date.now();
+  if (matchCache && now - matchCache.timestamp < CACHE_TTL) {
+    return matchCache.data;
+  }
+  const { recipes, pantryItems, synonyms } = await fetchMatchData();
+  const data = computeMatches(recipes, pantryItems, synonyms);
+  matchCache = { data, timestamp: now };
+  return data;
 }
 
 // All suggestions computed from a single getRecipeMatches() call
