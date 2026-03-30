@@ -23,7 +23,7 @@ export default async function RecipesPage({ searchParams }: { searchParams: Prom
   const matches = await getRecipeMatches(user.id);
 
   const filtered = category
-    ? matches.filter((m) => m.recipe.categories.includes(category))
+    ? matches.filter((m) => m.recipe.categories?.includes(category))
     : matches;
 
   const sorted = [...filtered].sort((a, b) => b.matchScore - a.matchScore);

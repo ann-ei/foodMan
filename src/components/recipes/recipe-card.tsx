@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import Link from "next/link";
 
 export function RecipeCard({ match }: { match: RecipeMatch }) {
   const { recipe, matchScore, missingIngredients, lastCooked } = match;
+  const [isFav, setIsFav] = useState(recipe.isFavorite);
   const [cookPending, startCook] = useTransition();
   const [favPending, startFav] = useTransition();
   const [shopPending, startShop] = useTransition();
@@ -41,7 +42,7 @@ export function RecipeCard({ match }: { match: RecipeMatch }) {
       </Link>
 
       <CardContent className="p-4">
-        {recipe.categories.length > 0 && (
+        {recipe.categories?.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-2">
             {recipe.categories.map((cat) => (
               <Badge key={cat} variant="secondary" className="capitalize text-xs">
@@ -55,12 +56,15 @@ export function RecipeCard({ match }: { match: RecipeMatch }) {
             <h3 className="font-semibold text-lg leading-tight line-clamp-2 hover:text-primary transition-colors">{recipe.title}</h3>
           </Link>
           <button
-            onClick={() => startFav(() => toggleFavorite(recipe.id))}
+            onClick={() => {
+              setIsFav(!isFav);
+              startFav(() => toggleFavorite(recipe.id));
+            }}
             disabled={favPending}
             className="shrink-0 mt-0.5"
           >
             <Heart
-              className={`h-5 w-5 ${recipe.isFavorite ? "fill-red-500 text-red-500" : "text-gray-300"}`}
+              className={`h-5 w-5 transition-colors ${isFav ? "fill-red-500 text-red-500" : "text-gray-300 hover:text-red-300"}`}
             />
           </button>
         </div>

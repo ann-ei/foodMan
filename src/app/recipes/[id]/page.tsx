@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ChefHat, Clock, Users, Heart, ArrowLeft } from "lucide-react";
-import { markAsCooked, toggleFavorite, deleteRecipe } from "@/actions/recipes";
+import { markAsCooked, deleteRecipe } from "@/actions/recipes";
+import { FavoriteButton } from "@/components/recipes/favorite-button";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -49,7 +50,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold">{recipe.title}</h1>
-          {recipe.categories.length > 0 && (
+          {recipe.categories?.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mt-2">
               {recipe.categories.map((cat) => (
                 <Badge key={cat} variant="secondary" className="capitalize">{cat}</Badge>
@@ -58,11 +59,7 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
           )}
           {recipe.description && <p className="text-muted-foreground mt-1">{recipe.description}</p>}
         </div>
-        <form action={async () => { "use server"; await toggleFavorite(id); }}>
-          <Button variant="ghost" size="icon" type="submit">
-            <Heart className={`h-6 w-6 ${recipe.isFavorite ? "fill-red-500 text-red-500" : ""}`} />
-          </Button>
-        </form>
+        <FavoriteButton recipeId={recipe.id} initialFavorite={recipe.isFavorite} />
       </div>
 
       <div className="flex gap-4 text-sm text-muted-foreground">
