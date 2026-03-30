@@ -1,45 +1,58 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Heart, ChefHat, ShoppingCart, Clock, Loader2 } from "lucide-react";
+import { Heart, ChefHat, ShoppingCart, Clock, Loader2, Check } from "lucide-react";
 import { markAsCooked, toggleFavorite } from "@/actions/recipes";
 import { addMissingIngredientsToList } from "@/actions/shopping-list";
 import type { RecipeMatch } from "@/types";
 import { formatDate } from "@/lib/utils";
-import Link from "next/link";
 
 export function RecipeCard({ match }: { match: RecipeMatch }) {
   const { recipe, matchScore, missingIngredients, lastCooked } = match;
+  const router = useRouter();
   const [isFav, setIsFav] = useState(recipe.isFavorite);
   const [cookPending, startCook] = useTransition();
   const [favPending, startFav] = useTransition();
   const [shopPending, startShop] = useTransition();
+  const [shopSuccess, setShopSuccess] = useState(false);
+
+  useEffect(() => {
+    if (!shopSuccess) return;
+    const timer = setTimeout(() => setShopSuccess(false), 2500);
+    return () => clearTimeout(timer);
+  }, [shopSuccess]);
 
   const matchColor =
     matchScore >= 80 ? "text-(--color-match-high)" : matchScore >= 50 ? "text-(--color-match-mid)" : "text-(--color-match-low)";
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if clicking on interactive elements
+    const target = e.target as HTMLElement;
+    if (target.closest("button") || target.closest("[role='button']")) return;
+    router.push(`/recipes/${recipe.id}`);
+  };
+
   return (
-    <Card className="overflow-hidden hover:shadow-md transition-shadow">
-      <Link href={`/recipes/${recipe.id}`} className="block">
-        <div className="relative">
-          {recipe.imageUrl ? (
-            <div className="h-40 bg-cover bg-center" style={{ backgroundImage: `url(${recipe.imageUrl})` }} />
-          ) : (
-            <div className="h-40 bg-gradient-to-br from-(--color-placeholder-from) to-(--color-placeholder-to) flex items-center justify-center">
-              <ChefHat className="h-12 w-12 text-(--color-placeholder-icon)" />
-            </div>
-          )}
-          <div className="absolute top-2 right-2">
-            <Badge variant={matchScore >= 80 ? "success" : matchScore >= 50 ? "warning" : "destructive"}>
-              {matchScore}% match
-            </Badge>
+    <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer relative" onClick={handleCardClick}>
+      <div className="relative">
+        {recipe.imageUrl ? (
+          <div className="h-40 bg-cover bg-center" style={{ backgroundImage: `url(${recipe.imageUrl})` }} />
+        ) : (
+          <div className="h-40 bg-gradient-to-br from-(--color-placeholder-from) to-(--color-placeholder-to) flex items-center justify-center">
+            <ChefHat className="h-12 w-12 text-(--color-placeholder-icon)" />
           </div>
+        )}
+        <div className="absolute top-2 right-2">
+          <Badge variant={matchScore >= 80 ? "success" : matchScore >= 50 ? "warning" : "destructive"}>
+            {matchScore}% match
+          </Badge>
         </div>
-      </Link>
+      </div>
 
       <CardContent className="p-4">
         {recipe.categories?.length > 0 && (
@@ -52,11 +65,10 @@ export function RecipeCard({ match }: { match: RecipeMatch }) {
           </div>
         )}
         <div className="flex items-start justify-between gap-2">
-          <Link href={`/recipes/${recipe.id}`} className="flex-1">
-            <h3 className="font-semibold text-lg leading-tight line-clamp-2 hover:text-primary transition-colors">{recipe.title}</h3>
-          </Link>
+          <h3 className="font-semibold text-lg leading-tight line-clamp-2">{recipe.title}</h3>
           <button
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               setIsFav(!isFav);
               startFav(() => toggleFavorite(recipe.id));
             }}
@@ -104,7 +116,7 @@ export function RecipeCard({ match }: { match: RecipeMatch }) {
           size="sm"
           className="flex-1"
           disabled={cookPending}
-          onClick={() => startCook(() => markAsCooked(recipe.id))}
+          onClick={(e) => { e.stopPropagation(); startCook(() => markAsCooked(recipe.id)); }}
         >
           {cookPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ChefHat className="h-4 w-4 mr-1" />}
           Cook
@@ -115,13 +127,33 @@ export function RecipeCard({ match }: { match: RecipeMatch }) {
             variant="outline"
             className="flex-1"
             disabled={shopPending}
-            onClick={() => startShop(() => addMissingIngredientsToList(missingIngredients))}
+            onClick={(e) => {
+              e.stopPropagation();
+              startShop(async () => {
+                await addMissingIngredientsToList(missingIngredients);
+                setShopSuccess(true);
+              });
+            }}
           >
             {shopPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <ShoppingCart className="h-4 w-4 mr-1" />}
             Add missing
           </Button>
         )}
       </CardFooter>
+
+      {/* Success toast */}
+      {shopSuccess && (
+        <div className="absolute bottom-16 left-3 right-3 bg-(--color-feedback-bg) text-(--color-feedback-text) text-xs rounded-lg p-3 shadow-lg animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center gap-2 font-medium">
+            <Check className="h-4 w-4" />
+            Added to shopping list
+          </div>
+          <div className="mt-1 text-muted-foreground">
+            {missingIngredients.slice(0, 3).join(", ")}
+            {missingIngredients.length > 3 && ` +${missingIngredients.length - 3} more`}
+          </div>
+        </div>
+      )}
     </Card>
   );
 }

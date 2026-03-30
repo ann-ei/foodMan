@@ -109,25 +109,25 @@ export default function HomePage() {
       </Suspense>
 
       {/* Create recipe CTA */}
-      <Card className="border-dashed border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors">
-        <CardContent className="flex flex-col sm:flex-row items-center gap-4 p-6 sm:p-8">
-          <div className="flex items-center justify-center h-14 w-14 rounded-full bg-primary/15 shrink-0">
-            <ChefHat className="h-7 w-7 text-primary" />
-          </div>
-          <div className="flex-1 text-center sm:text-left">
-            <h2 className="text-lg font-semibold">Create your own recipe</h2>
-            <p className="text-sm text-muted-foreground mt-0.5">
-              Add a new recipe manually, paste text, or import from a URL.
-            </p>
-          </div>
-          <Link href="/recipes/new">
-            <Button size="lg" className="gap-2">
+      <Link href="/recipes/new" className="block">
+        <Card className="border-dashed border-2 border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors cursor-pointer">
+          <CardContent className="flex flex-col sm:flex-row items-center gap-4 p-6 sm:p-8">
+            <div className="flex items-center justify-center h-14 w-14 rounded-full bg-primary/15 shrink-0">
+              <ChefHat className="h-7 w-7 text-primary" />
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <h2 className="text-lg font-semibold">Create your own recipe</h2>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Add a new recipe manually, paste text, or import from a URL.
+              </p>
+            </div>
+            <Button size="lg" className="gap-2 pointer-events-none">
               <Plus className="h-4 w-4" />
               New Recipe
             </Button>
-          </Link>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </Link>
     </div>
   );
 }

@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useTransition } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Trash2, ShoppingCart } from "lucide-react";
-import { addMealPlan, removeMealPlan, generateShoppingList } from "@/actions/meal-planner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight, Trash2, ShoppingCart, ChefHat, Loader2 } from "lucide-react";
+import Link from "next/link";
+import { addMealPlan, removeMealPlan, generateShoppingList, previewShoppingList } from "@/actions/meal-planner";
 import { addDays, startOfWeek, format, isSameDay } from "date-fns";
 import type { MealPlanWithRecipe, RecipeWithIngredients } from "@/types";
 
@@ -20,6 +22,10 @@ export function MealPlannerView({
   recipes: RecipeWithIngredients[];
 }) {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [showPreview, setShowPreview] = useState(false);
+  const [previewItems, setPreviewItems] = useState<{ name: string; quantity: number; unit: string | null }[]>([]);
+  const [previewPending, startPreview] = useTransition();
+  const [confirmPending, startConfirm] = useTransition();
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
 
   // Pre-index meals by "date|mealType" key to avoid filtering the full array 28 times
@@ -45,10 +51,23 @@ export function MealPlannerView({
     });
   };
 
-  const handleGenerateList = async () => {
+  const handlePreview = () => {
     const start = format(weekStart, "yyyy-MM-dd");
     const end = format(addDays(weekStart, 6), "yyyy-MM-dd");
-    await generateShoppingList(start, end);
+    startPreview(async () => {
+      const items = await previewShoppingList(start, end);
+      setPreviewItems(items);
+      setShowPreview(true);
+    });
+  };
+
+  const handleConfirmGenerate = () => {
+    const start = format(weekStart, "yyyy-MM-dd");
+    const end = format(addDays(weekStart, 6), "yyyy-MM-dd");
+    startConfirm(async () => {
+      await generateShoppingList(start, end);
+      setShowPreview(false);
+    });
   };
 
   return (
@@ -65,8 +84,8 @@ export function MealPlannerView({
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <Button variant="outline" onClick={handleGenerateList}>
-          <ShoppingCart className="h-4 w-4 mr-2" />
+        <Button variant="outline" onClick={handlePreview} disabled={previewPending}>
+          {previewPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShoppingCart className="h-4 w-4 mr-2" />}
           Generate Shopping List
         </Button>
       </div>
@@ -87,19 +106,31 @@ export function MealPlannerView({
                   <div key={type} className="space-y-1">
                     <p className="text-xs font-medium text-muted-foreground capitalize">{type}</p>
                     {meals.map((meal) => (
-                      <div key={meal.id} className="flex items-center gap-1">
-                        <Badge variant="secondary" className="text-xs truncate flex-1">
-                          {meal.recipe.title}
-                        </Badge>
+                      <div key={meal.id} className="group relative rounded-md border bg-card overflow-hidden">
+                        <Link href={`/recipes/${meal.recipe.id}`} className="block">
+                          {meal.recipe.imageUrl ? (
+                            <div
+                              className="h-16 bg-cover bg-center"
+                              style={{ backgroundImage: `url(${meal.recipe.imageUrl})` }}
+                            />
+                          ) : (
+                            <div className="h-16 bg-gradient-to-br from-(--color-placeholder-from) to-(--color-placeholder-to) flex items-center justify-center">
+                              <ChefHat className="h-5 w-5 text-(--color-placeholder-icon)" />
+                            </div>
+                          )}
+                          <div className="px-1.5 py-1">
+                            <p className="text-xs font-medium leading-tight line-clamp-2">{meal.recipe.title}</p>
+                          </div>
+                        </Link>
                         <button
                           onClick={() => removeMealPlan(meal.id)}
-                          className="text-muted-foreground hover:text-destructive"
+                          className="absolute top-1 right-1 p-0.5 rounded bg-background/70 text-muted-foreground opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
                         >
                           <Trash2 className="h-3 w-3" />
                         </button>
                       </div>
                     ))}
-                    <Select onValueChange={(recipeId) => handleAdd(day, type, recipeId)}>
+                    <Select value="" onValueChange={(recipeId) => { if (recipeId) handleAdd(day, type, recipeId); }}>
                       <SelectTrigger className="h-7 text-xs">
                         <SelectValue placeholder="+ Add" />
                       </SelectTrigger>
@@ -118,6 +149,44 @@ export function MealPlannerView({
           </Card>
         ))}
       </div>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Shopping List Preview</DialogTitle>
+            <DialogDescription>
+              These items will be added to your shopping list. Existing unpurchased items will be replaced.
+            </DialogDescription>
+          </DialogHeader>
+
+          {previewItems.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">
+              Nothing to add — your pantry covers everything for this week.
+            </p>
+          ) : (
+            <div className="max-h-64 overflow-y-auto space-y-1">
+              {previewItems.map((item) => (
+                <div key={item.name} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-muted">
+                  <span className="text-sm font-medium capitalize">{item.name}</span>
+                  <span className="text-sm text-muted-foreground">
+                    {item.quantity}{item.unit ? ` ${item.unit}` : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex gap-2 justify-end pt-2">
+            <Button variant="outline" onClick={() => setShowPreview(false)}>Cancel</Button>
+            {previewItems.length > 0 && (
+              <Button onClick={handleConfirmGenerate} disabled={confirmPending}>
+                {confirmPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Add {previewItems.length} items
+              </Button>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

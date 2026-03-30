@@ -29,6 +29,12 @@ export async function removeMealPlan(id: string) {
   revalidatePath("/meal-planner");
 }
 
+export async function previewShoppingList(startDate: string, endDate: string) {
+  const user = await getRequiredUser();
+  const { previewShoppingListFromMealPlan } = await import("@/lib/services/shopping-list");
+  return previewShoppingListFromMealPlan(user.id, new Date(startDate), new Date(endDate));
+}
+
 export async function generateShoppingList(startDate: string, endDate: string) {
   const user = await getRequiredUser();
   const items = await generateShoppingListFromMealPlan(
