@@ -41,6 +41,15 @@ export function RecipeCard({ match }: { match: RecipeMatch }) {
       </Link>
 
       <CardContent className="p-4">
+        {recipe.categories.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-2">
+            {recipe.categories.map((cat) => (
+              <Badge key={cat} variant="secondary" className="capitalize text-xs">
+                {cat}
+              </Badge>
+            ))}
+          </div>
+        )}
         <div className="flex items-start justify-between gap-2">
           <Link href={`/recipes/${recipe.id}`} className="flex-1">
             <h3 className="font-semibold text-lg leading-tight line-clamp-2 hover:text-primary transition-colors">{recipe.title}</h3>

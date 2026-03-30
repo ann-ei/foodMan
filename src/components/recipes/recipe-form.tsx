@@ -29,6 +29,7 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
   const [instructions, setInstructions] = useState(recipe?.instructions || "");
   const [imageUrl, setImageUrl] = useState(recipe?.imageUrl || "");
   const [sourceUrl, setSourceUrl] = useState(recipe?.sourceUrl || "");
+  const [categories, setCategories] = useState<string[]>(recipe?.categories || []);
   const [prepTime, setPrepTime] = useState<string>(recipe?.prepTime?.toString() || "");
   const [cookTime, setCookTime] = useState<string>(recipe?.cookTime?.toString() || "");
   const [servings, setServings] = useState<string>(recipe?.servings?.toString() || "");
@@ -95,6 +96,7 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
         instructions: instructions || undefined,
         imageUrl: imageUrl || undefined,
         sourceUrl: sourceUrl || undefined,
+        categories: categories.length > 0 ? categories as RecipeInput["categories"] : undefined,
         prepTime: prepTime ? parseInt(prepTime) : undefined,
         cookTime: cookTime ? parseInt(cookTime) : undefined,
         servings: servings ? parseInt(servings) : undefined,
@@ -177,6 +179,33 @@ export function RecipeForm({ recipe }: { recipe?: RecipeWithIngredients }) {
           <div>
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Brief description..." rows={2} />
+          </div>
+
+          <div>
+            <Label>Categories</Label>
+            <div className="flex flex-wrap gap-2 mt-1.5">
+              {(["breakfast", "lunch", "dinner", "snack", "dessert", "drink"] as const).map((cat) => {
+                const selected = categories.includes(cat);
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() =>
+                      setCategories(
+                        selected ? categories.filter((c) => c !== cat) : [...categories, cat]
+                      )
+                    }
+                    className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                      selected
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-background text-muted-foreground border-input hover:bg-accent hover:text-accent-foreground"
+                    }`}
+                  >
+                    {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-4">

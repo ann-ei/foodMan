@@ -49,6 +49,13 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold">{recipe.title}</h1>
+          {recipe.categories.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {recipe.categories.map((cat) => (
+                <Badge key={cat} variant="secondary" className="capitalize">{cat}</Badge>
+              ))}
+            </div>
+          )}
           {recipe.description && <p className="text-muted-foreground mt-1">{recipe.description}</p>}
         </div>
         <form action={async () => { "use server"; await toggleFavorite(id); }}>

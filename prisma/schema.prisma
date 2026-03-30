@@ -29,6 +29,7 @@ model Recipe {
   instructions String?
   imageUrl     String?
   sourceUrl    String?
+  categories   String[] @default([]) // breakfast, lunch, dinner, snack, dessert, drink
   prepTime     Int?     // minutes
   cookTime     Int?     // minutes
   servings     Int?

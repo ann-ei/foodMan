@@ -13,6 +13,7 @@ export const recipeInput = z.object({
   instructions: z.string().optional(),
   imageUrl: z.string().url().optional().or(z.literal("")),
   sourceUrl: z.string().url().optional().or(z.literal("")),
+  categories: z.array(z.enum(["breakfast", "lunch", "dinner", "snack", "dessert", "drink"])).optional(),
   prepTime: z.number().int().positive().optional(),
   cookTime: z.number().int().positive().optional(),
   servings: z.number().int().positive().optional(),
