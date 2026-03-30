@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Home, BookOpen, Carrot, ShoppingCart, CalendarDays, LogOut, User } from "lucide-react";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -49,6 +50,10 @@ export function Navbar({ userName }: { userName?: string | null }) {
           })}
         </nav>
         <div className="p-3 border-t space-y-1">
+          <div className="flex items-center justify-between px-3 py-1">
+            <span className="text-xs text-muted-foreground">Theme</span>
+            <ThemeToggle />
+          </div>
           <Link
             href="/profile"
             className={cn(

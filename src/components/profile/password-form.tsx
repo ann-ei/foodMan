@@ -54,7 +54,7 @@ export function PasswordForm() {
             <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg">{error}</div>
           )}
           {success && (
-            <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg">Password changed</div>
+            <div className="bg-(--color-feedback-bg) text-(--color-feedback-text) text-sm p-3 rounded-lg">Password changed</div>
           )}
           <div className="space-y-2">
             <Label htmlFor="currentPassword">Current Password</Label>

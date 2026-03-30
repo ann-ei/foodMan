@@ -42,8 +42,8 @@ export default async function RecipeDetailPage({ params }: { params: Promise<{ i
       {recipe.imageUrl ? (
         <div className="h-64 rounded-lg bg-cover bg-center" style={{ backgroundImage: `url(${recipe.imageUrl})` }} />
       ) : (
-        <div className="h-64 rounded-lg bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-          <ChefHat className="h-16 w-16 text-green-400" />
+        <div className="h-64 rounded-lg bg-gradient-to-br from-(--color-placeholder-from) to-(--color-placeholder-to) flex items-center justify-center">
+          <ChefHat className="h-16 w-16 text-(--color-placeholder-icon)" />
         </div>
       )}
 

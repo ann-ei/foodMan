@@ -4,27 +4,107 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@theme {
-  --color-background: hsl(0 0% 100%);
-  --color-foreground: hsl(142 10% 10%);
-  --color-card: hsl(0 0% 100%);
-  --color-card-foreground: hsl(142 10% 10%);
-  --color-popover: hsl(0 0% 100%);
-  --color-popover-foreground: hsl(142 10% 10%);
-  --color-primary: hsl(142 72% 42%);
-  --color-primary-foreground: hsl(0 0% 100%);
-  --color-secondary: hsl(142 20% 95%);
-  --color-secondary-foreground: hsl(142 10% 20%);
-  --color-muted: hsl(142 10% 96%);
-  --color-muted-foreground: hsl(142 5% 45%);
-  --color-accent: hsl(142 20% 93%);
-  --color-accent-foreground: hsl(142 10% 15%);
-  --color-destructive: hsl(0 84% 60%);
-  --color-destructive-foreground: hsl(0 0% 100%);
-  --color-border: hsl(142 10% 90%);
-  --color-input: hsl(142 10% 85%);
-  --color-ring: hsl(142 72% 42%);
+@theme inline {
+  --color-background: var(--bg);
+  --color-foreground: var(--fg);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-fg);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-fg);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-fg);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-fg);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-fg);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-fg);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-fg);
+  --color-border: var(--border-c);
+  --color-input: var(--input-c);
+  --color-ring: var(--ring-c);
+  --color-success-bg: var(--success-bg);
+  --color-success-text: var(--success-text);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-text: var(--warning-text);
+  --color-match-high: var(--match-high);
+  --color-match-mid: var(--match-mid);
+  --color-match-low: var(--match-low);
+  --color-placeholder-from: var(--ph-from);
+  --color-placeholder-to: var(--ph-to);
+  --color-placeholder-icon: var(--ph-icon);
+  --color-feedback-bg: var(--fb-bg);
+  --color-feedback-text: var(--fb-text);
   --radius: 0.75rem;
+}
+
+:root {
+  --bg: hsl(0 0% 100%);
+  --fg: hsl(142 10% 10%);
+  --card: hsl(0 0% 100%);
+  --card-fg: hsl(142 10% 10%);
+  --popover: hsl(0 0% 100%);
+  --popover-fg: hsl(142 10% 10%);
+  --primary: hsl(142 72% 42%);
+  --primary-fg: hsl(0 0% 100%);
+  --secondary: hsl(142 20% 95%);
+  --secondary-fg: hsl(142 10% 20%);
+  --muted: hsl(142 10% 96%);
+  --muted-fg: hsl(142 5% 45%);
+  --accent: hsl(142 20% 93%);
+  --accent-fg: hsl(142 10% 15%);
+  --destructive: hsl(0 84% 60%);
+  --destructive-fg: hsl(0 0% 100%);
+  --border-c: hsl(142 10% 90%);
+  --input-c: hsl(142 10% 85%);
+  --ring-c: hsl(142 72% 42%);
+  --success-bg: hsl(142 40% 90%);
+  --success-text: hsl(142 50% 30%);
+  --warning-bg: hsl(30 60% 90%);
+  --warning-text: hsl(30 70% 35%);
+  --match-high: hsl(142 50% 35%);
+  --match-mid: hsl(40 60% 40%);
+  --match-low: hsl(0 60% 50%);
+  --ph-from: hsl(142 30% 92%);
+  --ph-to: hsl(142 30% 85%);
+  --ph-icon: hsl(142 25% 70%);
+  --fb-bg: hsl(142 30% 95%);
+  --fb-text: hsl(142 40% 30%);
+}
+
+.dark {
+  --bg: hsl(0 0% 7%);
+  --fg: hsl(0 0% 90%);
+  --card: hsl(0 0% 11%);
+  --card-fg: hsl(0 0% 90%);
+  --popover: hsl(0 0% 11%);
+  --popover-fg: hsl(0 0% 90%);
+  --primary: hsl(142 50% 45%);
+  --primary-fg: hsl(142 10% 5%);
+  --secondary: hsl(0 0% 15%);
+  --secondary-fg: hsl(0 0% 80%);
+  --muted: hsl(0 0% 14%);
+  --muted-fg: hsl(0 0% 55%);
+  --accent: hsl(0 0% 17%);
+  --accent-fg: hsl(0 0% 85%);
+  --destructive: hsl(0 55% 50%);
+  --destructive-fg: hsl(0 0% 95%);
+  --border-c: hsl(0 0% 18%);
+  --input-c: hsl(0 0% 22%);
+  --ring-c: hsl(142 50% 45%);
+  --success-bg: hsl(142 25% 18%);
+  --success-text: hsl(142 35% 65%);
+  --warning-bg: hsl(30 25% 18%);
+  --warning-text: hsl(30 45% 65%);
+  --match-high: hsl(142 40% 55%);
+  --match-mid: hsl(40 45% 55%);
+  --match-low: hsl(0 45% 55%);
+  --ph-from: hsl(142 15% 16%);
+  --ph-to: hsl(142 15% 22%);
+  --ph-icon: hsl(142 15% 35%);
+  --fb-bg: hsl(142 15% 15%);
+  --fb-text: hsl(142 30% 60%);
 }
 
 @layer base {

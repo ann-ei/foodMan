@@ -43,7 +43,7 @@ export function ProfileForm({ name, email }: { name: string; email: string }) {
             <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg">{error}</div>
           )}
           {success && (
-            <div className="bg-green-50 text-green-700 text-sm p-3 rounded-lg">Profile updated</div>
+            <div className="bg-(--color-feedback-bg) text-(--color-feedback-text) text-sm p-3 rounded-lg">Profile updated</div>
           )}
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>

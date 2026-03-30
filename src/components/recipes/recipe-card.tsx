@@ -20,7 +20,7 @@ export function RecipeCard({ match }: { match: RecipeMatch }) {
   const [shopPending, startShop] = useTransition();
 
   const matchColor =
-    matchScore >= 80 ? "text-green-600" : matchScore >= 50 ? "text-yellow-600" : "text-red-500";
+    matchScore >= 80 ? "text-(--color-match-high)" : matchScore >= 50 ? "text-(--color-match-mid)" : "text-(--color-match-low)";
 
   return (
     <Card className="overflow-hidden hover:shadow-md transition-shadow">
@@ -29,8 +29,8 @@ export function RecipeCard({ match }: { match: RecipeMatch }) {
           {recipe.imageUrl ? (
             <div className="h-40 bg-cover bg-center" style={{ backgroundImage: `url(${recipe.imageUrl})` }} />
           ) : (
-            <div className="h-40 bg-gradient-to-br from-green-100 to-green-200 flex items-center justify-center">
-              <ChefHat className="h-12 w-12 text-green-400" />
+            <div className="h-40 bg-gradient-to-br from-(--color-placeholder-from) to-(--color-placeholder-to) flex items-center justify-center">
+              <ChefHat className="h-12 w-12 text-(--color-placeholder-icon)" />
             </div>
           )}
           <div className="absolute top-2 right-2">
@@ -64,7 +64,7 @@ export function RecipeCard({ match }: { match: RecipeMatch }) {
             className="shrink-0 mt-0.5"
           >
             <Heart
-              className={`h-5 w-5 transition-colors ${isFav ? "fill-red-500 text-red-500" : "text-gray-300 hover:text-red-300"}`}
+              className={`h-5 w-5 transition-colors ${isFav ? "fill-red-500 text-red-500" : "text-muted-foreground/50 hover:text-red-400"}`}
             />
           </button>
         </div>
